@@ -1,0 +1,134 @@
+# 定義自訂網路
+networks:
+  kafka-net:
+    driver: bridge
+
+# 三節點 Kafka 集群配置(開發環境版本):
+#   使用 Confluent Platform 的 Kafka 映像版本 7.8.0
+#   KAFKA_PROCESS_ROLES = broker,controller (同時作為 Broker 和 Controller)
+#   KAFKA_CONTROLLER_QUORUM_VOTERS = 定義 Controller 節點的投票者列表
+#   KAFKA_LISTENERS = 定義兩個 listener，分別用於客戶端連接和 Controller 之間的內部通信
+#   KAFKA_ADVERTISED_LISTENERS = 客戶端連接時使用的地址
+#   KAFKA_LISTENER_SECURITY_PROTOCOL_MAP = 定義 listener 與其安全協議的映射
+#   KAFKA_CONTROLLER_LISTENER_NAMES = 指定用於 Controller 通信的 listener 名稱
+#   KAFKA_INTER_BROKER_LISTENER_NAME = 定義 Broker 之間通信使用的 listener
+#   CLUSTER_ID = Kafka 集群的唯一標識符，可以使用 Kafka 提供的工具生成
+#   KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR = 設置偏移量主題的副本因子，應等於節點數以確保高可用性
+#   KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS = 設置消費者組初始重新平衡的延遲時間
+#   KAFKA_DEFAULT_REPLICATION_FACTOR = 設置主題的默認副本因子
+#   KAFKA_MIN_INSYNC_REPLICAS = 設置在 ISR（同步副本集）中的最小副本數，以確保數據的持久性和可用性
+#   開發環境定義兩個 listener：
+#      - PLAINTEXT = Client <-> Broker 之間的明文傳輸協議
+#      - CONTROLLER = Broker <-> Controller 之間的內部協調流量
+ 
+# 生產環境請使用 SSL 設定並在 broker/server.properties 提供：
+#   ssl.keystore.location (Broker 的證書)
+#   ssl.truststore.location (CA 根憑證)
+
+# KAFKA_LISTENERS: SSL://kafka_1:9094
+# KAFKA_ADVERTISED_LISTENERS: SSL://your-domain.com:9094
+# KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: SSL:SSL
+
+# KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: SASL_SSL:SASL_SSL
+# KAFKA_SASL_ENABLED_MECHANISMS: SCRAM-SHA-256
+# KAFKA_SASL_MECHANISM_INTER_BROKER_PROTOCOL: SCRAM-SHA-256
+services:
+  kafka_1:
+    image: confluentinc/cp-kafka:7.8.0
+    container_name: kafka_1
+    hostname: kafka_1
+    ports:
+      - "9091:9091"   # Client (PLAINTEXT)
+      - "9092:9092"   # INTERNAL
+      - "9093:9093"   # CONTROLLER
+    volumes:
+      - ./kafka_1/data:/var/lib/kafka/data
+    environment:
+      KAFKA_NODE_ID: 1
+      # KAFKA_BROKER_ID: 1  # broker.id 已被 KAFKA_NODE_ID 取代
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka_1:9093,2@kafka_2:9096,3@kafka_3:9099
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9091,INTERNAL://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9091,INTERNAL://kafka_1:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,INTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      CLUSTER_ID: 90eaGfC6QbqAP-LupuSTCg
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3 # 必須等於節點數
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 3
+      KAFKA_MIN_INSYNC_REPLICAS: 2
+    networks:
+      - kafka-net
+
+  kafka_2:
+    image: confluentinc/cp-kafka:7.8.0
+    container_name: kafka_2
+    hostname: kafka_2
+    ports:
+      - "9094:9094" # Client (PLAINTEXT)
+      - "9095:9095" # INTERNAL
+      - "9096:9096" # CONTROLLER
+    volumes:
+      - ./kafka_2/data:/var/lib/kafka/data
+    environment:
+      KAFKA_NODE_ID: 2
+      # KAFKA_BROKER_ID: 2  # broker.id 已被 KAFKA_NODE_ID 取代
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka_1:9093,2@kafka_2:9096,3@kafka_3:9099
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9094,INTERNAL://0.0.0.0:9095,CONTROLLER://0.0.0.0:9096
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9094,INTERNAL://kafka_2:9095
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,INTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      CLUSTER_ID: 90eaGfC6QbqAP-LupuSTCg
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3 # 必須等於節點數
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 3
+      KAFKA_MIN_INSYNC_REPLICAS: 2
+    networks:
+      - kafka-net
+
+  kafka_3:
+    image: confluentinc/cp-kafka:7.8.0
+    container_name: kafka_3
+    hostname: kafka_3
+    ports:
+      - "9097:9097" # Client (PLAINTEXT)
+      - "9098:9098" # INTERNAL
+      - "9099:9099" # CONTROLLER
+    volumes:
+      - ./kafka_3/data:/var/lib/kafka/data
+    environment:
+      KAFKA_NODE_ID: 3
+      # KAFKA_BROKER_ID: 3  # broker.id 已被 KAFKA_NODE_ID 取代
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka_1:9093,2@kafka_2:9096,3@kafka_3:9099
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9097,INTERNAL://0.0.0.0:9098,CONTROLLER://0.0.0.0:9099
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9097,INTERNAL://kafka_3:9098
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,INTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      CLUSTER_ID: 90eaGfC6QbqAP-LupuSTCg
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3 # 必須等於節點數
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 3
+      KAFKA_MIN_INSYNC_REPLICAS: 2
+    networks:
+      - kafka-net
+
+# Kafka UI 管理介面/ 可視化管理 Kafka 集群
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: kafka_cluster_ui
+    ports:
+      - "8080:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka_1:9092,kafka_2:9095,kafka_3:9098 # INTERNAL
+    depends_on:
+      - kafka_1
+      - kafka_2
+      - kafka_3
+    networks:
+      - kafka-net
