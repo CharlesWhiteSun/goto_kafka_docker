@@ -2,7 +2,8 @@
 
 echo "=== 讀取 Topics 設定 ==="
 
-TOPICS=("plc_power_prod" "plc_power_dev" "plc_power_control")
+# TOPICS=("plc_power_prod" "plc_power_dev" "plc_power_control") # 未解析前資料
+TOPICS=("resolved_power_prod" "resolved_power_dev" "resolved_power_control") # 已解析
 
 BOOTSTRAP_SERVER="kafka_1:9092"     # Kafka 服務地址，輸入一個 # INTERNAL 節點名稱即可 (根據 docker-compose.yml 中的服務名稱)
 REPLICATION_FACTOR=3                # 複本數量，根據 Kafka 集群節點數量調整
